@@ -147,7 +147,7 @@ app.post("/employee/create", function(req, res) {
           reportingTo: req.body.reportingTo,
           createdOn: new Date()
         };
-        if (user.reportingTo !== undefined && user.reportingTo !== null) {
+        if (user.reportingTo !== undefined && (user.reportingTo !== null || user.reportingTo !== "") ) {
           getUserDBForId(user.reportingTo, function(manager) {
             if (!manager) {
               return res
@@ -223,7 +223,7 @@ app.get("/employee/list", function(req, res) {
       function(err, rows, fields) {
         if (err) throw err;
         if (rows.length === 0) {
-          return res.status(200).send("No Employess to show!");
+          return res.status(200).send("No Employees to show!");
         }
         res.json(rows);
       }
