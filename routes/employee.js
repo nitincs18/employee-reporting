@@ -161,3 +161,17 @@ app.post('/employee/create', function(req, res) {
 }
 });
 
+
+
+app.get('/employee/list', function(req, res) {
+  try{
+    db.get().query('SELECT * FROM employee ', function(err, rows, fields) {
+        if (err) throw err;
+        res.json(rows);
+      });
+  }catch(err){
+    console.log(err);
+    res.status(500).send(`Server error`);
+    return;
+  }
+  });
