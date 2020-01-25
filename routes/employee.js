@@ -7,15 +7,6 @@ var express = require("express"),
 
 var app = (module.exports = express.Router());
 
-var jwtCheck = ejwt({
-  secret: config.secretKey
-});
-
-function createToken(user) {
-  return jwt.sign(_.omit(user, "password"), config.secretKey, {
-    expiresIn: 60 * 60 * 5
-  });
-}
 
 function getUserDB(username, done) {
   db.get().query(
