@@ -256,12 +256,17 @@ function getManager(empId) {
 
 app.delete("/employee/delete/:empId", function(req, res) {
   try {
+    getUserDBForId(user.reportingTo, function(manager) {
+        if (!manager) {
+          return res
+            .status(404)
+            .send(
+              "There is no employee present in with given Id!!"
+            );
+        }
     getManager(req.params.empId).then(manager => {
-      // console.log("user.reportingTo !== manager",user.reportingTo , manager)
 
-      if (manager === null) {
-        //   hierIdWhoIsNotReportingToAnyOne()
-        //     .then((hierarchyRes) => {
+      if (manager === null) {        
         db.get().query(
           `DELETE FROM  employee where empId=?`,
           [req.params.empId],
@@ -274,8 +279,8 @@ app.delete("/employee/delete/:empId", function(req, res) {
               });
             }
             return res.status(202).send("Employee Deleted");
-          }
-        );
+        });
+    
       } else {
         db.get().query(
           `SELECT reportingTo from employee where empId = ?`,
@@ -330,6 +335,7 @@ app.delete("/employee/delete/:empId", function(req, res) {
         );
       }
     });
+})
   } catch (err) {
     console.log(err);
     res.status(500).send(`Server error`);
