@@ -175,3 +175,208 @@ app.get('/employee/list', function(req, res) {
     return;
   }
   });
+
+  function updateHierId( empId, reportingTo) {
+    return new Promise((resolve, reject) => {
+    //   console.log("empId,reportingTo", empId, reportingTo)
+      db.get().query(`SELECT reportingTo,hierarchyId from employee where empId=?`, [empId], function (err, result) {
+        if (err) {
+          console.error(err);
+          console.log(err);
+          reject(err);
+          return;
+        }
+        let hierIdWhoIsDeleted = result[0].hierarchyId;
+       
+        let hierarchyId = result[0].hierarchyId + "." + "%";
+        db.get().query(`SELECT hierarchyId from employee where reportingTo = ?`, [result[0].reportingTo], function (err, reportigToResult) {
+            if (err) {
+              console.error(err);
+              console.log(err);
+              reject(err);
+              return;
+            }
+            console.log("reportigToResult",reportigToResult)
+
+        db.get().query(`SELECT empId,reportingTo,hierarchyId from employee where hierarchyId LIKE ?`, [hierarchyId], function (err, hierarchyResult) {
+          if (err) {
+            console.error(err);
+            console.log(err);
+            reject(err);
+            return;
+          }
+          console.log("Chlid Id:", hierarchyResult)
+  
+          let hierIdArray = new Array();
+          hierIdArray = hierarchyResult.map(id => id.hierarchyId);
+          let empIdArray = new Array();
+          empIdArray = hierarchyResult.map(id => id.empId);
+          console.log(empIdArray)
+  
+          db.get().query(`CALL SP_getHierarchyId(?,?)`, [empId, reportingTo], function (err, hierarchyId) {
+            if (err) {
+              console.error(err);
+              console.log(err);
+              reject(err);
+              return;
+            }
+            // console.log("Updated hierarchyId:", hierarchyId)
+  
+            getHierarchy( reportingTo)
+             .then((hierId) => {
+            //   console.log("hierId", hierId)
+              // user.hierarchyId=hierId;
+              db.get().query(`UPDATE employee SET reportingTo=?,hierarchyId=? where empId=?`, [reportingTo, hierId, empId], function (err, reportingResult) {
+                if (err) {
+                  console.error(err);
+                  console.log(err);
+                  reject(err);
+                  return;
+                }
+                // console.log("reportingResult",reportingResult)
+  
+                let parentHierarchy = result[0].hierarchyId;
+                let newHierarchyId = hierarchyId[0][0].hierID
+                let newHierIdOfChildren = new Array();
+                for (let i = 0; i < hierIdArray.length; i++) {
+                  newHierIdOfChildren[i] = hierIdArray[i].replace(parentHierarchy, newHierarchyId)
+                }
+                // console.log("newHierIdOfChildren", newHierIdOfChildren)
+                if (newHierIdOfChildren.length > 0) {
+                  for (let i = 0; i < newHierIdOfChildren.length; i++) {
+                    db.get().query(`UPDATE employee SET hierarchyId=? where empId=?`, [newHierIdOfChildren[i], empIdArray[i]], function (err, result) {
+                      if (err) {
+                        console.error(err);
+                        console.log(err);
+                        reject(err);
+                        return;
+                      }
+                    //   console.log("newHierIdOfChildren.length == i+1", newHierIdOfChildren.length, i + 1)
+                      if (newHierIdOfChildren.length == i + 1)
+                        resolve("HierarchyId updated");
+                    });
+                  }
+                }
+                else
+                  resolve("HierarchyId updated");
+              });
+            }).catch((err)=>{
+              console.error(err);
+              console.log(err);
+              reject(err);
+              return;
+            })
+          });
+        });
+      });
+    })
+    })
+  }
+  
+  function getManager( empId) {
+    return new Promise((resolve, reject) => {
+      db.get().query(`SELECT reportingTo from employee where empId=?`, [empId], function (err, result) {
+        if (err) {
+          console.error(err);
+          console.log(err);
+          reject(err);
+          return;
+        }
+        if (result.length > 0)
+          resolve(result[0].reportingTo);
+        else resolve(null)
+      })
+    })
+  }
+
+
+  app.delete('/employee/delete/:empId', function(req, res) {
+    try{
+        getManager( req.params.empId)
+        .then((manager) => {
+          // console.log("user.reportingTo !== manager",user.reportingTo , manager)
+          
+            if (manager === null) {
+            //   hierIdWhoIsNotReportingToAnyOne()
+            //     .then((hierarchyRes) => {
+                  db.get().query(`DELETE FROM  employee where empId=?`, [ req.params.empId], function (err, result) {
+                    if (err) {
+                      console.error(err);
+                      console.log(err);
+                      return res.status(304).send({
+                        message: 'Error:Data not updates'
+                      });
+                    }
+                    return res.status(202).send('Employee Deleted')
+                  });
+                // }).catch((err) => {
+                //   console.log(err);
+                //   console.error(err);
+                //   res.status(501).send("Server Error");
+                //   return;
+                // })
+              }
+              else{
+            // updateHierId(req.params.empId, manager)
+            //   .then((hierRes) => {
+            //     console.log("hierRes", hierRes)
+            db.get().query(`SELECT reportingTo from employee where empId = ?`, [req.params.empId], function (err, empResult) {
+                if (err) {
+                  console.error(err);
+                  console.log(err);
+                  reject(err);
+                  return;
+                }//result 3
+                db.get().query(`SELECT empId from employee where reportingTo = ?`, [req.params.empId], function (err, reportigToResult) {
+                    if (err) {
+                      console.error(err);
+                      console.log(err);
+                      reject(err);
+                      return;
+                    }//5,6
+                   let empIds = reportigToResult.map(id => id.empId) 
+                db.get().query(`DELETE FROM  employee where empId=?`, [ req.params.empId], function (err, result) {
+                  if (err) {
+                    console.error(err);
+                    console.log(err);
+                    return res.status(304).send({
+                      message: 'Error:Data not updates'
+                    });
+                  }
+                  db.get().query(`UPDATE employee SET reportingTo=? where empId IN (?)`, [empResult[0].reportingTo ,empIds], function (err, result) {
+                    if (err) {
+                      console.error(err);
+                      console.log(err);
+                      reject(err);
+                      return;
+                    }
+                  return res.status(202).send('Employee Deleted')
+                });
+            })
+            })
+              })
+            }
+        //   } else {
+        //     db.get().query(`DELETE FROM  employee where empId=?`, [ req.params.empId], function (err, result) {
+        //       if (err) {
+        //         console.error(err);
+        //         console.log(err);
+        //         return res.status(304).send({
+        //           message: 'Error:Data not updates'
+        //         });
+        //       }              
+              
+            });
+          
+        // }).catch((err) => {
+        //   console.log(err);
+        //   console.error(err);
+        //   res.status(501).send("Server Error");
+        //   return;
+        // })
+    }catch(err){
+      console.log(err);
+      res.status(500).send(`Server error`);
+      return;
+    }
+    });
