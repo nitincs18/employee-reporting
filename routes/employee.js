@@ -256,7 +256,7 @@ function getManager(empId) {
 
 app.delete("/employee/delete/:empId", function(req, res) {
   try {
-    getUserDBForId(user.reportingTo, function(manager) {
+    getUserDBForId(req.params.empId, function(manager) {
         if (!manager) {
           return res
             .status(404)
