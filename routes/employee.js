@@ -138,7 +138,7 @@ app.post("/employee/create", function(req, res) {
           reportingTo: req.body.reportingTo,
           createdOn: new Date()
         };
-        if (user.reportingTo !== undefined && (user.reportingTo !== null || user.reportingTo !== "") ) {
+        if (user.reportingTo !== undefined && (user.reportingTo !== null && user.reportingTo !== "") ) {
           getUserDBForId(user.reportingTo, function(manager) {
             if (!manager) {
               return res
