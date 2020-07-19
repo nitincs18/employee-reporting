@@ -14,7 +14,7 @@
     "express-jwt": "^5.0.0",
     "jade": "~1.11.0",
     "jsonwebtoken": "^7.1.9",
-    "lodash": "^4.15.0",
+    "lodash": "^4.17.19",
     "morgan": "~1.7.0",
     "mysql": "^2.11.1",
     "serve-favicon": "~2.3.0"
